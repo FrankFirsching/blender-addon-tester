@@ -60,8 +60,8 @@ try:
     pytest_main_args = [TESTS_PATH, "-v", "-x"]
     if COVERAGE_REPORTING is not False:
         pytest_main_args += ["--cov", "--cov-report", "term", "--cov-report", "xml"]
-        if not "" == PYTEST_ARGS:
-            pytest_main_args += [PYTEST_ARGS]
+    if not "" == PYTEST_ARGS:
+        pytest_main_args += [PYTEST_ARGS]
     exit_val = pytest.main(pytest_main_args, plugins=[SetupPlugin(ADDON)])
 except Exception as e:
     print(e)
