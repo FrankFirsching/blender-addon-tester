@@ -10,12 +10,14 @@ from .get_blender import get_blender_from_suffix
 CURRENT_MODULE_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 BUILTIN_BLENDER_LOAD_TESTS_SCRIPT = os.path.join(CURRENT_MODULE_DIRECTORY, "blender_load_pytest.py")
 
-def _run_blender_with_python_script(blender, blender_python_script):
+def _run_blender_with_python_script(blender, blender_python_script, run_in_window=True):
     blender_python_script = blender_python_script
     local_python = CURRENT_MODULE_DIRECTORY
     os.environ["LOCAL_PYTHONPATH"] = local_python
 
-    cmd = f'{blender} -b --python "{blender_python_script}"'
+    
+    bg_switch = "--no-window-focus" if run_in_window else "-b"
+    cmd = f'{blender} {bg_switch} --python "{blender_python_script}"'
     print(f"Will run the following command: {cmd}")
     result = int(os.system(cmd))
     if 0 == result:
@@ -108,6 +110,7 @@ def run_blender_version_for_addon_with_pytest_suite(addon_path, blender_revision
         "coverage",
         "tests",
         "pytest_args",
+        "run_in_window"
     ]
     for c in config.keys():
         if not c in config_keys:
@@ -136,10 +139,16 @@ def run_blender_version_for_addon_with_pytest_suite(addon_path, blender_revision
     else:
         os.environ["BLENDER_PYTEST_ARGS"] = config["pytest_args"] 
 
+    if not config.get("run_in_window"):
+        run_in_window = False
+    else:
+        run_in_window = config["run_in_window"]
+
+
     test_exisiting_addons(blender_revision, addon_path, blender)
-        
+    print("run_in_window: ", run_in_window)
     # Run tests with the proper Blender version and configured tests
-    return _run_blender_with_python_script(blender, test_file)
+    return _run_blender_with_python_script(blender, test_file, run_in_window)
 
 
 if __name__ == "__main__":
