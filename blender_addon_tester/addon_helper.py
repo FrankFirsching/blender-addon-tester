@@ -121,7 +121,7 @@ def zip_addon(addon: str, addon_dir: str):
                     clean_file(filename)
 
                     # Write file into zip under its hierarchy
-                    zf.write(filename, arcname=os.path.relpath(filename, addon_path.parent))
+                    zf.write(filename, arcname=os.path.relpath(filename, dest_temp_dir.parent))
 
             # Go back to start dir
             os.chdir(cwd)
