@@ -17,7 +17,7 @@ def _run_blender_with_python_script(blender, blender_python_script, run_in_windo
 
     
     bg_switch = "--no-window-focus" if run_in_window else "-b"
-    cmd = f'{blender} {bg_switch} --python "{blender_python_script}"'
+    cmd = f'{blender} {bg_switch} --factory-startup --python "{blender_python_script}"'
     print(f"Will run the following command: {cmd}")
     result = int(os.system(cmd))
     if 0 == result:

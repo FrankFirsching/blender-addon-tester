@@ -117,8 +117,9 @@ def zip_addon(addon: str, addon_dir: str):
                 for filename in files:
                     filename = os.path.join(dirname, filename)
 
-                    # Clean file
-                    clean_file(filename)
+                    # Clean python files
+                    if os.path.splitext(filename)[1]==".py":
+                        clean_file(filename)
 
                     # Write file into zip under its hierarchy
                     zf.write(filename, arcname=os.path.relpath(filename, dest_temp_dir.parent))
