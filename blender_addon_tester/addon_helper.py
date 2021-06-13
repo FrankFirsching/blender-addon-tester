@@ -187,8 +187,9 @@ def install_addon(bpy_module: str, zfile: str):
 def cleanup(addon, bpy_module, addon_dir):
     print(f"Cleaning up - {bpy_module}")
     bpy.ops.preferences.addon_disable(module=bpy_module)
-    if os.path.isdir(addon_dir):
-        shutil.rmtree(addon_dir)
+    if "BLENDER_ADDON_TESTER_NO_DIR_CLEANUP" not in os.environ:
+        if os.path.isdir(addon_dir):
+            shutil.rmtree(addon_dir)
 
 
 def get_version(bpy_module):
