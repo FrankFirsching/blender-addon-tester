@@ -1,4 +1,6 @@
 pytest
 coverage
 pytest-cov
+debugpy
+pytest-benchmark
 #zipp==2.1.0

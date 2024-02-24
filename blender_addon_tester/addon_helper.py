@@ -112,6 +112,9 @@ def zip_addon(addon: str, addon_dir: str):
 
             # Write addon content into archive
             for dirname, subdirs, files in os.walk(temp_dir_dst):
+                if "__pycache__" in subdirs:
+                    subdirs.remove("__pycache__")
+                
                 for filename in files:
                     # Ignore pycache files
                     if filename.endswith('.pyc'):
@@ -208,8 +211,9 @@ def install_addon(bpy_module: str, zfile: str, addon_dir: str):
 def cleanup(addon, bpy_module, addon_dir):
     print(f"Cleaning up - {bpy_module}")
     bpy.ops.preferences.addon_disable(module=bpy_module)
-    if os.path.isdir(addon_dir):
-        shutil.rmtree(addon_dir)
+    if "BLENDER_ADDON_TESTER_NO_DIR_CLEANUP" not in os.environ:
+        if os.path.isdir(addon_dir):
+            shutil.rmtree(addon_dir)
 
 
 def get_version(bpy_module):
