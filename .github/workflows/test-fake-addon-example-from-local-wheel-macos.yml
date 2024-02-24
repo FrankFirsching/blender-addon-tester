@@ -1,13 +1,13 @@
-name: test-fake-addon-example-from-github-pip-nightly
+name: test-fake-addon-example-from-local-wheel-macos
 
-on:
+on: 
+  #push:
   pull_request:
-  schedule:
-    - cron: '0 0 * * 0'
+  #schedule:
+  #  - cron: '0 0 * * 0'
 
 jobs:
   build:
-
     runs-on: ${{ matrix.os }}
     strategy:
       max-parallel: 4
@@ -15,7 +15,7 @@ jobs:
       matrix:
         blender-version: ["3.5", "3.4", "3.3", "3.2", "2.82",]
         #os: [ubuntu-latest, windows-latest, macos-latest]
-        os: [ubuntu-latest, windows-latest]
+        os: [macos-latest]
     env:
       BLENDER_CACHE: ${{ github.workspace }}/.blender_releases_cache # The place where blender releases are downloaded
       BLENDER_VERSION: ${{ matrix.blender-version }}
@@ -31,11 +31,12 @@ jobs:
       with:
         path: ${{ env.BLENDER_CACHE }}
         key: ${{ matrix.os }}-blender-${{ matrix.blender-version }}
+    # Fix for issue https://github.com/douglaskastle/blender-addon-tester/issues/14
     - name: Setup Environment
       run: |
         # This testing script will make use of BLENDER_VERSION and BLENDER_CACHE
+        bash rebuild_pipreinstall_and_testexamples.sh
         cd examples/testing-fake-addon/
-        pip install -r requirements.txt
     - name: Download and Test Blender ${{ matrix.blender-version }} x ${{ matrix.os}}
       run: |
         cd examples/testing-fake-addon/
@@ -52,10 +53,27 @@ jobs:
     - name: Test Blender ${{ matrix.blender-version }} x ${{ matrix.os}} built in addon
       run: |
         cd examples/testing-io_scene_obj/
-        pwd
         python test_addon_blender.py io_scene_obj ${{ matrix.blender-version }}
-    - name: Expose coverage as a CI download # Related to test_addon_blender_advanced.py
+    - name: Test Blender ${{ matrix.blender-version }} x ${{ matrix.os}} built in addon file
+      run: |
+        cd examples/testing-io_scene_obj/
+        python test_addon_blender.py io_import_images_as_planes.py ${{ matrix.blender-version }}
+    - if: ${{ matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest' }}
+      name: Download and Test Blender ${{ matrix.blender-version }} x ${{ matrix.os}} with absolute paths | Unix
+      run: |
+        test_dir=$(pwd)/examples/testing-fake-addon
+        cd $(dirname $(mktemp -u))
+        python $test_dir/test_addon_blender.py $test_dir/fake_addon ${{ matrix.blender-version }}
+    - if: ${{ matrix.os == 'windows-latest' }}
+      name: Download and Test Blender ${{ matrix.blender-version }} x ${{ matrix.os}} with absolute paths | Windows
+      run: |
+        $test_dir="$pwd/examples/testing-fake-addon"
+        cd $env:TEMP
+        python "$test_dir/test_addon_blender.py" "$test_dir/fake_addon" ${{ matrix.blender-version }}
+    - name: Expose coverage as a CI download # Related to test_fake_addon_blender_advanced.py
       uses: actions/upload-artifact@v1
       with:
         name: coverage.xml
         path: examples/testing-fake-addon/coverage.xml
+
+  

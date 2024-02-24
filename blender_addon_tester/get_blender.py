@@ -13,35 +13,41 @@ from distutils.dir_util import copy_tree
 
 CURRENT_MODULE_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 
-def getSuffix(blender_version):
-    print(sys.platform)
-    if "win32" == sys.platform or "win64" == sys.platform or "cygwin" == sys.platform:
-        machine = "windows64"
+def getSuffix(blender_version, platform=None):
+    
+    if platform is None:
+        platform = sys.platform
+    print(platform)
+    
+    if "win32" == platform or "win64" == platform or "cygwin" == platform:
+        machine = "windows"
         ext = "zip"
-    elif "darwin" == sys.platform:
-        machine = "(macOS|OSX)"
+    elif "darwin" == platform:
+        #machine = "(macOS|OSX)"
+        machine = "(macOS|darwin)"
         ext = "(dmg|zip|tar\.gz)"
     else:
-        machine = "linux.*64"
-        ext = "tar.+"
-
-    g = re.search(f"\d\.\d\d", blender_version)
+        machine = "linux"
+        ext = "tar.(xz|gz|bz2)"
+    
+    
+    g = re.search(f"\d\.\d+", blender_version)
     if g:
         rev = g.group(0)
     else:
-        raise RuntimeError("Blender version cannot be guessed in the following string: {0}".format(blender_version))
+        raise RuntimeError(f"Blender version cannot be guessed in the following string: {blender_version}")
         
     urls = [
         f"https://ftp.nluug.nl/pub/graphics/blender/release/Blender{rev}",
-        "https://builder.blender.org/download",
+        "https://builder.blender.org/download/daily",
     ]
     blender_zippath = None
     nightly = False
     release_file_found = False
-    versions_found = {}
-    links = {}
+    versions_found = []
+    version_to_link = {}
+
     for url in urls:
-        versions_found[url] = []
         if release_file_found:
             break
 
@@ -49,25 +55,29 @@ def getSuffix(blender_version):
         page = requests.get(url)
         data = page.text
         soup = BeautifulSoup(data, features="html.parser")
-        
+
         blender_version_suffix = ""
         for link in soup.find_all("a"):
             x = str(link.get("href"))
-            g = re.search(f"blender-(.+)-{machine}.+{ext}", x)
-            revs = []
-            if g:
-                version_found = g.group(1).split("-")[0]
-                versions_found[url].append(version_found)
-                links[version_found] = g.group(0)
-                
-    for url in versions_found.keys():
-        for rev in sorted(versions_found[url], reverse=True):
-            if rev.startswith(blender_version):
-                blender_zippath = f"{url}/{links[rev]}"
-                break
-                        
+            #print(x)   
+            if re.search('blender', x) and re.search(machine, x) and re.search(f"{ext}$", x):
+                g = re.search(f"blender-(.+)", x)         
+                if g:
+                    version_found = g.group(1).split("-")[0]
+                    if version_found.startswith(blender_version) and not version_found in versions_found:
+                        if x.startswith("http"):
+                            download_url = f"{x}"
+                        else:
+                            download_url = f"{url}/{x}"
+
+                        versions_found.append(version_found)
+                        version_to_link[version_found] = download_url
+
+    version = sorted(versions_found, reverse=True)[0]
+    blender_zippath = version_to_link[version]
+
     if None == blender_zippath:
-        print(soup)
+        #print(soup)
         raise Exception(f"Unable to find {blender_version} in nightlies, here is what is available {versions_found}")
     
     return blender_zippath, nightly
@@ -228,18 +238,11 @@ def getBlender(blender_version, blender_zippath, nightly):
         print("ERROR, Blender's bundled python executable could not be found within Blender's files")
         exit(1)
 
-    if "cygwin" == sys.platform:
-        print("ERROR, do not run this under cygwin, run it under Linux and Windows cmd!!")
-        exit(1)
+    cmd = f"{python} -m ensurepip"
+    os.system(cmd)
 
-    if sys.platform.startswith("win") or sys.platform == "darwin" or (sys.platform == "linux" and blender_version.startswith("2.7")):
-        import urllib.request
-        urllib.request.urlretrieve("https://bootstrap.pypa.io/get-pip.py", "get-pip.py")
-        cmd = f"{python} get-pip.py"
-        os.system(cmd)
-    else:
-        cmd = f"{python} -m ensurepip"
-        os.system(cmd)
+    cmd = f"{python} -m pip install -U pip"
+    os.system(cmd)
 
     cmd = f"{python} -m pip install --upgrade -r {CURRENT_MODULE_DIRECTORY}/blender_requirements.txt -r {CURRENT_MODULE_DIRECTORY}/requirements.txt"
     os.system(cmd)
@@ -271,7 +274,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         blender_rev = sys.argv[1]
     else:
-        blender_rev = "2.80"
+        blender_rev = "2.92"
 
     if re.search("-", blender_rev):
         blender_rev, _ = blender_rev.split("-")
