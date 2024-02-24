@@ -16,3 +16,4 @@ examples/blender-*z*
 examples/blender-*/
 get-pip.py
 *.bak
+venv
